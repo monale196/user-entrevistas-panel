@@ -1,65 +1,120 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState, useEffect } from "react";
+
+export default function UserEntrevistas() {
+  const [tituloES, setTituloES] = useState("");
+  const [tituloEN, setTituloEN] = useState("");
+  const [descripcionES, setDescripcionES] = useState("");
+  const [descripcionEN, setDescripcionEN] = useState("");
+  const [fechaISO, setFechaISO] = useState("");
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [mensaje, setMensaje] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const MAX_SIZE_MB = 500; // Tamaño máximo del video
+
+  useEffect(() => {
+    if (!videoFile) {
+      setVideoPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(videoFile);
+    setVideoPreview(url);
+
+    return () => URL.revokeObjectURL(url);
+  }, [videoFile]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!tituloES || !tituloEN || !descripcionES || !descripcionEN || !fechaISO || !videoFile) {
+      setMensaje("Todos los campos son obligatorios, incluido el video");
+      return;
+    }
+
+    if (videoFile.size > MAX_SIZE_MB * 1024 * 1024) {
+      setMensaje(`El video supera el tamaño máximo de ${MAX_SIZE_MB}MB`);
+      return;
+    }
+
+    setSubmitting(true);
+    setMensaje("");
+
+    try {
+      const formData = new FormData();
+      formData.append("tituloES", tituloES);
+      formData.append("tituloEN", tituloEN);
+      formData.append("descripcionES", descripcionES);
+      formData.append("descripcionEN", descripcionEN);
+      formData.append("fechaISO", fechaISO);
+      formData.append("video", videoFile);
+
+      const res = await fetch("https://historiasvivas.com/api/entrevistas", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Error al subir la entrevista");
+
+      setMensaje("✅ Entrevista subida correctamente");
+      setTituloES(""); setTituloEN(""); setDescripcionES(""); setDescripcionEN(""); setFechaISO(""); setVideoFile(null);
+      const fileInput = document.getElementById("videoInput") as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
+    } catch (err) {
+      console.error(err);
+      setMensaje("❌ Error al subir la entrevista");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isFormValid =
+    tituloES && tituloEN && descripcionES && descripcionEN && fechaISO && videoFile;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black p-4">
+      <div className="max-w-xl w-full bg-white/90 dark:bg-zinc-900 p-8 rounded-2xl shadow-lg">
+        <h1 className="text-3xl font-semibold mb-6 text-center text-black dark:text-white">
+          Subir nueva entrevista
+        </h1>
+
+        {mensaje && (
+          <p
+            className={`text-center mb-4 ${
+              mensaje.startsWith("✅") ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {mensaje}
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input type="text" placeholder="Título ES" value={tituloES} onChange={e => setTituloES(e.target.value)} className="w-full p-2 border rounded"/>
+          <input type="text" placeholder="Título EN" value={tituloEN} onChange={e => setTituloEN(e.target.value)} className="w-full p-2 border rounded"/>
+          <textarea placeholder="Descripción ES" value={descripcionES} onChange={e => setDescripcionES(e.target.value)} className="w-full p-2 border rounded"/>
+          <textarea placeholder="Descripción EN" value={descripcionEN} onChange={e => setDescripcionEN(e.target.value)} className="w-full p-2 border rounded"/>
+          <input type="date" value={fechaISO} onChange={e => setFechaISO(e.target.value)} className="w-full p-2 border rounded"/>
+          <input type="file" id="videoInput" accept="video/*" onChange={e => setVideoFile(e.target.files ? e.target.files[0] : null)} className="w-full p-2 border rounded" required/>
+
+          {videoPreview && (
+            <video className="w-full h-64 rounded-lg mt-2" controls src={videoPreview} />
+          )}
+
+          <button
+            type="submit"
+            disabled={!isFormValid || submitting}
+            className={`w-full p-2 rounded-md mt-2 text-white transition ${
+              isFormValid && !submitting
+                ? "bg-[#0a1b2e] hover:bg-[#081222]"
+                : "bg-gray-400 cursor-not-allowed"
+            }`}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+            {submitting ? "Subiendo..." : "Subir entrevista"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
