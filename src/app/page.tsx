@@ -13,8 +13,9 @@ export default function UserEntrevistas() {
   const [mensaje, setMensaje] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const MAX_SIZE_MB = 500; // Tamaño máximo del video
+  const MAX_SIZE_MB = 500; // Tamaño máximo de video
 
+  // Preview del video al seleccionarlo
   useEffect(() => {
     if (!videoFile) {
       setVideoPreview(null);
@@ -51,7 +52,11 @@ export default function UserEntrevistas() {
       formData.append("fechaISO", fechaISO);
       formData.append("video", videoFile);
 
-      const res = await fetch("https://historiasvivas.com/api/entrevistas", {
+      // ⚡ Aquí usamos variable de entorno para la URL del backend
+      const API_URL = process.env.NEXT_PUBLIC_API_URL;
+      if (!API_URL) throw new Error("No se encontró la URL del backend");
+
+      const res = await fetch(API_URL, {
         method: "POST",
         body: formData,
       });
@@ -82,9 +87,7 @@ export default function UserEntrevistas() {
 
         {mensaje && (
           <p
-            className={`text-center mb-4 ${
-              mensaje.startsWith("✅") ? "text-green-600" : "text-red-600"
-            }`}
+            className={`text-center mb-4 ${mensaje.startsWith("✅") ? "text-green-600" : "text-red-600"}`}
           >
             {mensaje}
           </p>
@@ -105,11 +108,7 @@ export default function UserEntrevistas() {
           <button
             type="submit"
             disabled={!isFormValid || submitting}
-            className={`w-full p-2 rounded-md mt-2 text-white transition ${
-              isFormValid && !submitting
-                ? "bg-[#0a1b2e] hover:bg-[#081222]"
-                : "bg-gray-400 cursor-not-allowed"
-            }`}
+            className={`w-full p-2 rounded-md mt-2 text-white transition ${isFormValid && !submitting ? "bg-[#0a1b2e] hover:bg-[#081222]" : "bg-gray-400 cursor-not-allowed"}`}
           >
             {submitting ? "Subiendo..." : "Subir entrevista"}
           </button>
